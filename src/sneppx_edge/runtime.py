@@ -17,11 +17,12 @@ class Runtime:
         self.backend = backend
         self._model = None
 
-    def load(self, path, quantize=False):
+    def load(self, path, quantize=False, symmetric=False, per_channel=False):
         """Load a model; optionally quantize on load."""
         self._model = QuantizedModel.load(path)
         if quantize:
-            self._model = self._model.quantize()
+            self._model = self._model.quantize(
+                symmetric=symmetric, per_channel=per_channel)
         return self._model
 
     def infer(self, inputs):
@@ -29,6 +30,12 @@ class Runtime:
         if self._model is None:
             raise RuntimeError("no model loaded; call load() first")
         return self._model.forward(inputs)
+
+    def infer_batch(self, rows):
+        """Run one forward pass per input row (batched)."""
+        if self._model is None:
+            raise RuntimeError("no model loaded; call load() first")
+        return self._model.forward_batch(rows)
 
     @property
     def model(self):

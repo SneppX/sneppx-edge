@@ -14,16 +14,25 @@ def main(argv=None):
     q = sub.add_parser("quantize", help="quantize a float model checkpoint")
     q.add_argument("model", help="path to the float checkpoint")
     q.add_argument("out", help="path to write the uint8 checkpoint")
+    q.add_argument("--symmetric", action="store_true", help="symmetric uint8 scheme (zero-centered ranges)")
+    q.add_argument("--per-channel", action="store_true", help="per-row scale/zero_point")
 
     inf = sub.add_parser("infer", help="run one forward pass")
     inf.add_argument("model", help="path to the checkpoint")
     inf.add_argument("inputs", nargs="+", type=float, help="input features as floats")
     inf.add_argument("--quantize", action="store_true", help="quantize on load")
 
+    infb = sub.add_parser("infer-batch", help="run one forward pass per input row")
+    infb.add_argument("model", help="path to the checkpoint")
+    infb.add_argument("--rows", action="append", nargs="+", type=float,
+                       help="one input row (repeatable), e.g. --rows 1 2 --rows 3 4")
+    infb.add_argument("--quantize", action="store_true", help="quantize on load")
+
     args = parser.parse_args(argv)
 
     if args.command == "quantize":
-        qm = QuantizedModel.load(args.model).quantize()
+        qm = QuantizedModel.load(args.model).quantize(
+            symmetric=args.symmetric, per_channel=args.per_channel)
         qm.save(args.out)
         print(f"quantized -> {args.out}")
         return 0
@@ -41,6 +50,25 @@ def main(argv=None):
             print(f"error: {exc}", file=sys.stderr)
             return 1
         print(json.dumps(out))
+        return 0
+
+    if args.command == "infer-batch":
+        rt = Runtime()
+        try:
+            rt.load(args.model, quantize=args.quantize)
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        rows = list(args.rows or [])
+        if not rows:
+            print("error: supply at least one --rows argument", file=sys.stderr)
+            return 2
+        try:
+            outs = rt.infer_batch(rows)
+        except RuntimeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(json.dumps(outs))
         return 0
 
     return 2
