@@ -151,6 +151,19 @@ class QuantizedModel:
         return (f"QuantizedModel(out={self.out_features}, in={self.in_features}, "
                 f"dtype={self.dtype}, scheme={self.scheme})")
 
+    def threshold(self, value):
+        """Return a new ``QuantizedModel`` with weights thresholded at *value*.
+
+        Weights dequantized below *value* become 0; others remain unchanged.
+        """
+        dequant = self._dequantized_weights()
+        new_weight = [
+            [v if abs(v) >= value else 0.0 for v in row] for row in dequant
+        ]
+        return QuantizedModel(new_weight, bias=self.bias,
+                              scale=self.scale, zero_point=self.zero_point,
+                              dtype=self.dtype, scheme=self.scheme)
+
 
 def _quantize_tensor(weight, symmetric):
     wmin = min(min(row) for row in weight)
