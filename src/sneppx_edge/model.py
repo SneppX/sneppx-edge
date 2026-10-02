@@ -170,6 +170,17 @@ class QuantizedModel:
         return QuantizedModel(dequant, bias=self.bias,
                               dtype="float32", scheme="float32")
 
+    def dequantize_stats(self):
+        """Return statistics of dequantized weights: min, max, mean, std."""
+        dequant = self._dequantized_weights()
+        arr = np.array(dequant, dtype=np.float64)
+        return {
+            "min": float(arr.min()),
+            "max": float(arr.max()),
+            "mean": float(arr.mean()),
+            "std": float(arr.std())
+        }
+
     def requantize(self, symmetric=False, per_channel=False):
         """Dequantize then requantize with new scheme parameters."""
         dequant = self._dequantized_weights()
