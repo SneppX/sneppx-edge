@@ -164,6 +164,12 @@ class QuantizedModel:
                               scale=self.scale, zero_point=self.zero_point,
                               dtype=self.dtype, scheme=self.scheme)
 
+    def dequantize(self):
+        """Return a new ``QuantizedModel`` with dequantized float32 weights."""
+        dequant = self._dequantized_weights()
+        return QuantizedModel(dequant, bias=self.bias,
+                              dtype="float32", scheme="float32")
+
 
 def _quantize_tensor(weight, symmetric):
     wmin = min(min(row) for row in weight)
