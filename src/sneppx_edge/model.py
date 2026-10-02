@@ -170,6 +170,12 @@ class QuantizedModel:
         return QuantizedModel(dequant, bias=self.bias,
                               dtype="float32", scheme="float32")
 
+    def requantize(self, symmetric=False, per_channel=False):
+        """Dequantize then requantize with new scheme parameters."""
+        dequant = self._dequantized_weights()
+        return QuantizedModel(dequant, bias=self.bias).quantize(
+            symmetric=symmetric, per_channel=per_channel)
+
 
 def _quantize_tensor(weight, symmetric):
     wmin = min(min(row) for row in weight)
