@@ -38,7 +38,7 @@ class QuantizedModel:
         """Run a single linear pass ``inputs @ weight.T + bias``.
 
         ``inputs`` is a list of length ``in_features``. Returns a list of
-        length ``out_features``.
+        length ``out_features`` dequantized to float.
         """
         w = self._dequantized_weights()
         out = []
